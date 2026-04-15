@@ -3,356 +3,245 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ContainerGen</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<title>ContainerGen — Docker Configs in Sekunden</title>
+<meta name="description" content="Generiere produktionsreife Dockerfiles, docker-compose und Kubernetes-Manifeste automatisch.">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600;12..96,700;12..96,800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#080b12;--surface:#0e1420;--surface2:#131c2e;--border:#1a2236;--border2:#243047;--text:#e2e8f0;--muted:#4a5568;--accent:#3b82f6;--accent2:#1d4ed8;--green:#22c55e;--mono:'JetBrains Mono',monospace;--sans:'Sora',sans-serif}
-body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh}
-.shell{display:grid;grid-template-columns:260px 1fr 240px;grid-template-rows:54px 1fr;min-height:100vh}
-.topbar{grid-column:1/-1;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 1.5rem;gap:10px}
-.logo{font-family:var(--mono);font-size:15px;font-weight:600}
-.logo span{color:var(--accent)}
-.sidebar-left{background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:.9rem}
-.section-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px}
-.svc-cat{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
-.svc-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:7px}
-.svc-btn{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:7px 9px;cursor:pointer;transition:.12s;text-align:left;font-family:var(--sans)}
-.svc-btn:hover{border-color:var(--border2)}
-.svc-btn.active{border-color:var(--accent);background:#0f1e36}
-.svc-btn-name{font-size:12px;font-weight:600;color:var(--text);display:block}
-.svc-btn.active .svc-btn-name{color:#93c5fd}
-.svc-btn-tag{font-size:10px;color:var(--muted);font-family:var(--mono);display:block;margin-top:1px}
-.divider{height:1px;background:var(--border)}
-.field{margin-bottom:7px}
-.field label{display:block;font-size:10px;font-weight:700;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em}
-.field input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 9px;font-size:12px;font-family:var(--mono);color:var(--text);outline:none;transition:.12s}
-.field input:focus{border-color:var(--accent)}
-.toggle-list{display:flex;flex-direction:column;gap:4px}
-.toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:6px 9px;cursor:pointer;transition:.12s}
-.toggle-row.active{border-color:#1a3a1a;background:#0a1a0a}
-.tl{font-size:11px;color:var(--text);font-weight:500}
-.td{font-size:9px;color:var(--muted);margin-top:1px}
-.tsw{width:28px;height:16px;background:var(--border2);border-radius:8px;position:relative;flex-shrink:0;transition:.15s}
-.tsw::after{content:'';position:absolute;width:10px;height:10px;background:var(--muted);border-radius:50%;top:3px;left:3px;transition:.15s}
-.toggle-row.active .tsw{background:#166534}
-.toggle-row.active .tsw::after{left:15px;background:var(--green)}
-.k8s-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
-.k8s-grid .field{margin-bottom:0}
-.k8s-grid .field input{font-size:11px;padding:5px 7px}
-.gen-btn{width:100%;padding:9px;background:var(--accent);border:none;border-radius:7px;color:white;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;gap:7px}
-.gen-btn:hover{background:var(--accent2)}
-.gen-btn:disabled{opacity:.4;cursor:not-allowed}
-.gen-status{font-size:11px;font-family:var(--mono);color:var(--muted);text-align:center;padding:3px 0;min-height:16px}
-.main{display:flex;flex-direction:column;overflow:hidden}
-.info-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:.5rem 1.25rem;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px}
-.svc-title{font-size:13px;font-weight:600}
-.info-tag{font-size:10px;font-family:var(--mono);background:var(--bg);border:1px solid var(--border2);border-radius:4px;padding:2px 7px;color:#60a5fa}
-.tab-bar{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 1.25rem;gap:2px;overflow-x:auto}
-.tab-btn{font-family:var(--mono);font-size:11px;padding:8px 12px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:.12s}
-.tab-btn:hover{color:var(--text)}
-.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
-.tab-btn.modified{color:#fb923c}
-.tab-btn.modified.active{border-bottom-color:#fb923c}
-.code-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:.75rem 1.25rem;gap:7px}
-.code-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.code-filename{font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;align-items:center;gap:7px}
-.code-filename::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block}
-.code-filename.modified::before{background:#fb923c}
-textarea.code{flex:1;font-family:var(--mono);font-size:12px;line-height:1.7;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.9rem 1.1rem;color:var(--text);resize:none;outline:none;min-height:340px;transition:border-color .12s}
-textarea.code:focus{border-color:var(--border2)}
-textarea.code.modified{border-color:#7c3506}
-.btn{font-family:var(--sans);font-size:11px;font-weight:600;padding:5px 12px;border-radius:6px;border:1px solid var(--border2);background:var(--bg);color:var(--text);cursor:pointer;transition:.12s}
-.btn:hover{background:var(--border)}
-.btn.success{background:#166534;border-color:#166534;color:#4ade80}
-.dl-bar{background:var(--surface);border-top:1px solid var(--border);padding:.5rem 1.25rem;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.dl-info{font-size:11px;color:var(--muted);font-family:var(--mono)}
-.dl-btns{display:flex;gap:5px}
-.sidebar-right{background:var(--surface2);border-left:1px solid var(--border);overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:.9rem}
-.api-box{background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:1rem}
-.api-title{font-size:12px;font-weight:700;margin-bottom:4px}
-.api-desc{font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5}
-.api-input{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:8px 10px;font-size:12px;font-family:var(--mono);color:var(--text);outline:none;transition:.12s}
-.api-input:focus{border-color:var(--accent)}
-.api-input.valid{border-color:#166534}
-.api-input.invalid{border-color:#7f1d1d}
-.api-status{font-size:10px;margin-top:4px;font-family:var(--mono);min-height:14px}
-.api-status.ok{color:var(--green)}
-.api-status.err{color:#f87171}
-.api-hint{font-size:10px;color:var(--muted);margin-top:5px}
-.api-hint a{color:var(--accent);text-decoration:none}
-.info-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:1rem}
-.info-box-title{font-size:12px;font-weight:700;margin-bottom:8px}
-.info-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px}
-.info-row:last-child{margin-bottom:0}
-.ik{color:var(--muted)}
-.iv{font-family:var(--mono);color:#60a5fa}
-.iv.int{color:var(--muted)}
-.iv.warn{color:#fb923c}
-.sec-box{background:var(--bg);border:1px solid #1a3a1a;border-radius:10px;padding:1rem}
-.sec-title{font-size:12px;font-weight:700;color:#4ade80;margin-bottom:8px}
-.sec-item{font-size:11px;color:var(--muted);padding:3px 0;display:flex;align-items:flex-start;gap:6px;line-height:1.4}
-.sec-item::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0}
-.spin{display:inline-block;width:10px;height:10px;border:2px solid rgba(255,255,255,.2);border-top-color:currentColor;border-radius:50%;animation:sp .5s linear infinite}
-@keyframes sp{to{transform:rotate(360deg)}}
+:root{
+  --bg:#03050a;--surface:#080d18;--border:#0f1a2e;
+  --text:#e8edf5;--muted:#4a5568;--accent:#0ea5e9;--accent2:#0284c7;
+  --mono:'JetBrains Mono',monospace;--display:'Bricolage Grotesque',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--display);background:var(--bg);color:var(--text);overflow-x:hidden}
+
+/* Background */
+.bg-grid{position:fixed;inset:0;z-index:0;
+  background-image:linear-gradient(rgba(14,165,233,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(14,165,233,.03) 1px,transparent 1px);
+  background-size:60px 60px;pointer-events:none}
+.bg-glow{position:fixed;top:-20vh;left:50%;transform:translateX(-50%);width:80vw;height:50vh;
+  background:radial-gradient(ellipse,rgba(14,165,233,.07) 0%,transparent 70%);pointer-events:none;z-index:0}
+
+/* Nav */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;
+  padding:0 2rem;height:60px;background:rgba(3,5,10,.85);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border)}
+.nav-logo{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--text);text-decoration:none}
+.nav-logo span{color:var(--accent)}
+.nav-links{margin-left:auto;display:flex;align-items:center;gap:2rem}
+.nav-links a{font-size:14px;color:var(--muted);text-decoration:none;transition:color .15s}
+.nav-links a:hover{color:var(--text)}
+.nav-cta{background:var(--accent)!important;color:white!important;padding:7px 18px;
+  border-radius:7px;font-weight:600!important;transition:background .15s!important}
+.nav-cta:hover{background:var(--accent2)!important}
+
+/* Hero */
+.hero{position:relative;z-index:1;min-height:100vh;display:flex;align-items:center;
+  justify-content:center;text-align:center;padding:8rem 2rem 6rem}
+.hero-inner{max-width:800px}
+.hero-badge{display:inline-flex;align-items:center;gap:7px;background:rgba(14,165,233,.1);
+  border:1px solid rgba(14,165,233,.2);border-radius:20px;padding:5px 16px;font-size:12px;
+  font-family:var(--mono);color:var(--accent);margin-bottom:2rem;
+  animation:fadeUp .6s ease both}
+.hero-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+h1{font-size:clamp(2.5rem,6vw,4.8rem);font-weight:800;line-height:1.1;
+  letter-spacing:-.03em;margin-bottom:1.5rem;animation:fadeUp .6s .1s ease both}
+h1 em{font-style:normal;background:linear-gradient(135deg,var(--accent),#38bdf8,#7dd3fc);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:1.15rem;color:var(--muted);max-width:560px;margin:0 auto 2.5rem;
+  line-height:1.7;font-weight:300;animation:fadeUp .6s .2s ease both}
+.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;
+  animation:fadeUp .6s .3s ease both}
+.btn-primary{background:var(--accent);color:white;padding:13px 28px;border-radius:9px;
+  font-size:15px;font-weight:700;text-decoration:none;transition:.15s;
+  display:inline-flex;align-items:center;gap:7px;
+  box-shadow:0 0 30px rgba(14,165,233,.25)}
+.btn-primary:hover{background:var(--accent2);box-shadow:0 0 40px rgba(14,165,233,.35)}
+.btn-ghost{background:transparent;color:var(--text);padding:13px 28px;border-radius:9px;
+  font-size:15px;font-weight:600;text-decoration:none;border:1px solid var(--border);transition:.15s}
+.btn-ghost:hover{border-color:var(--muted)}
+.hero-stats{margin-top:4rem;display:flex;gap:2.5rem;justify-content:center;flex-wrap:wrap;
+  animation:fadeUp .6s .4s ease both}
+.stat-num{font-size:1.8rem;font-weight:800;font-family:var(--mono)}
+.stat-label{font-size:12px;color:var(--muted);margin-top:2px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* Section */
+section{position:relative;z-index:1}
+.sec{max-width:1100px;margin:0 auto;padding:6rem 2rem}
+.sec-tag{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.75rem}
+.sec-title{font-size:clamp(1.8rem,3.5vw,2.6rem);font-weight:800;letter-spacing:-.02em;margin-bottom:1rem;line-height:1.2}
+.sec-sub{font-size:1.05rem;color:var(--muted);max-width:540px;line-height:1.7;font-weight:300}
+
+/* Features */
+.features-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:1px;background:var(--border);border:1px solid var(--border);border-radius:16px;
+  overflow:hidden;margin-top:3.5rem}
+.feat{background:var(--surface);padding:1.75rem;transition:background .2s}
+.feat:hover{background:#0d1525}
+.feat-icon{font-size:1.8rem;margin-bottom:1rem}
+.feat-title{font-size:15px;font-weight:700;margin-bottom:.5rem}
+.feat-text{font-size:13px;color:var(--muted);line-height:1.6;font-weight:300}
+
+/* Services */
+.svc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:3rem}
+.svc-chip{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:1rem;text-align:center;transition:.15s}
+.svc-chip:hover{border-color:var(--accent);background:rgba(14,165,233,.05)}
+.svc-chip-icon{font-size:1.5rem;margin-bottom:.4rem}
+.svc-chip-name{font-size:13px;font-weight:600}
+.svc-chip-tag{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+
+/* CTA Section */
+.cta-section{background:linear-gradient(135deg,rgba(14,165,233,.05),rgba(14,165,233,.02));
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.cta-inner{max-width:700px;margin:0 auto;padding:6rem 2rem;text-align:center}
+.cta-title{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.02em;margin-bottom:1rem}
+.cta-sub{font-size:1.05rem;color:var(--muted);margin-bottom:2.5rem;line-height:1.7;font-weight:300}
+
+/* Footer */
+footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:2.5rem 2rem;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+.footer-logo{font-family:var(--mono);font-size:14px;color:var(--muted)}
+.footer-logo span{color:var(--accent)}
+.footer-copy{font-size:12px;color:var(--muted)}
+
+/* Scroll reveal */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
+.reveal.visible{opacity:1;transform:none}
+
+/* Code preview */
+.code-preview{background:#0a0d14;border:1px solid var(--border);border-radius:12px;
+  padding:1.5rem;font-family:var(--mono);font-size:12px;line-height:1.8;
+  color:#e2e8f0;margin-top:3.5rem;text-align:left;overflow-x:auto}
+.code-preview .c-blue{color:#60a5fa}
+.code-preview .c-green{color:#4ade80}
+.code-preview .c-yellow{color:#fbbf24}
+.code-preview .c-muted{color:#4a5568}
 </style>
 </head>
 <body>
-<div class="shell">
-  <header class="topbar">
-    <div class="logo">container<span>gen</span></div>
-  </header>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
 
-  <aside class="sidebar-left">
-    <div>
-      <div class="section-label">Service</div>
-      <div class="svc-cat">Apps</div>
-      <div class="svc-grid">
-        <button class="svc-btn active" data-svc="python" onclick="selSvc(this)"><span class="svc-btn-name">Python</span><span class="svc-btn-tag">Flask</span></button>
-        <button class="svc-btn" data-svc="node" onclick="selSvc(this)"><span class="svc-btn-name">Node.js</span><span class="svc-btn-tag">Express</span></button>
-        <button class="svc-btn" data-svc="php" onclick="selSvc(this)"><span class="svc-btn-name">PHP</span><span class="svc-btn-tag">+Nginx</span></button>
-        <button class="svc-btn" data-svc="go" onclick="selSvc(this)"><span class="svc-btn-name">Go</span><span class="svc-btn-tag">Multi-stage</span></button>
-        <button class="svc-btn" data-svc="java" onclick="selSvc(this)"><span class="svc-btn-name">Java</span><span class="svc-btn-tag">Spring Boot</span></button>
-        <button class="svc-btn" data-svc="nextcloud" onclick="selSvc(this)"><span class="svc-btn-name">Nextcloud</span><span class="svc-btn-tag">+MariaDB</span></button>
-      </div>
-      <div class="svc-cat">Webserver</div>
-      <div class="svc-grid">
-        <button class="svc-btn" data-svc="nginx" onclick="selSvc(this)"><span class="svc-btn-name">Nginx</span><span class="svc-btn-tag">alpine</span></button>
-        <button class="svc-btn" data-svc="apache" onclick="selSvc(this)"><span class="svc-btn-name">Apache</span><span class="svc-btn-tag">httpd</span></button>
-      </div>
-      <div class="svc-cat">Datenbanken</div>
-      <div class="svc-grid">
-        <button class="svc-btn" data-svc="mysql" onclick="selSvc(this)"><span class="svc-btn-name">MySQL</span><span class="svc-btn-tag">+Adminer</span></button>
-        <button class="svc-btn" data-svc="mariadb" onclick="selSvc(this)"><span class="svc-btn-name">MariaDB</span><span class="svc-btn-tag">+Adminer</span></button>
-        <button class="svc-btn" data-svc="postgres" onclick="selSvc(this)"><span class="svc-btn-name">PostgreSQL</span><span class="svc-btn-tag">+pgAdmin</span></button>
-      </div>
-    </div>
-    <div class="divider"></div>
-    <div>
-      <div class="section-label">Konfiguration</div>
-      <div class="field"><label>Projektname</label><input id="proj-name" value="myapp" oninput="softUpdate()"></div>
-      <div class="field"><label>Port</label><input id="proj-port" value="8080" oninput="softUpdate()"></div>
-    </div>
-    <div class="divider" id="zt-div"></div>
-    <div id="zt-section">
-      <div class="section-label">Zero-Trust</div>
-      <div class="toggle-list">
-        <div class="toggle-row active" onclick="togZT(this,'nr')"><div><div class="tl">Non-root User</div><div class="td">Nicht als root</div></div><div class="tsw"></div></div>
-        <div class="toggle-row active" onclick="togZT(this,'ro')"><div><div class="tl">Read-only FS</div><div class="td">read_only: true</div></div><div class="tsw"></div></div>
-        <div class="toggle-row active" onclick="togZT(this,'np')"><div><div class="tl">No new privileges</div><div class="td">Privilege Escalation</div></div><div class="tsw"></div></div>
-        <div class="toggle-row active" onclick="togZT(this,'cd')"><div><div class="tl">Drop capabilities</div><div class="td">cap_drop: ALL</div></div><div class="tsw"></div></div>
-      </div>
-    </div>
-    <div class="divider" id="k8s-div"></div>
-    <div id="k8s-section">
-      <div class="section-label">Kubernetes</div>
-      <div class="k8s-grid">
-        <div class="field"><label>Replicas</label><input type="number" id="k-rep" value="2" min="1" oninput="softUpdate()"></div>
-        <div class="field"><label>Namespace</label><input id="k-ns" value="default" oninput="softUpdate()"></div>
-        <div class="field"><label>CPU Req</label><input id="k-cr" value="100m" oninput="softUpdate()"></div>
-        <div class="field"><label>CPU Limit</label><input id="k-cl" value="500m" oninput="softUpdate()"></div>
-        <div class="field"><label>Mem Req</label><input id="k-mr" value="128Mi" oninput="softUpdate()"></div>
-        <div class="field"><label>Mem Limit</label><input id="k-ml" value="512Mi" oninput="softUpdate()"></div>
-      </div>
-    </div>
-    <div class="divider"></div>
-    <div>
-      <div class="section-label">Generieren</div>
-      <button class="gen-btn" id="gen-btn" onclick="generate()">
-        <span id="gen-icon">⚡</span><span id="gen-text">Konfiguration generieren</span>
-      </button>
-      <div class="gen-status" id="gen-status"></div>
-    </div>
-  </aside>
+<!-- Nav -->
+<nav>
+  <a class="nav-logo" href="index.html">container<span>gen</span></a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#services">Services</a>
+    <a href="login.html" class="nav-cta">App öffnen →</a>
+  </div>
+</nav>
 
-  <main class="main">
-    <div class="info-bar">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span class="svc-title" id="svc-title">Python Flask</span>
-        <span class="info-tag" id="svc-image">python:3.12-slim</span>
-      </div>
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge"><div class="hero-badge-dot"></div>KI-gestützte Docker-Konfiguration</div>
+    <h1>Docker Configs<br><em>in Sekunden</em> generieren</h1>
+    <p class="hero-sub">Kein manuelles Schreiben mehr. ContainerGen erstellt produktionsreife Dockerfiles, docker-compose und Kubernetes-Manifeste — automatisch, sicher, sofort einsetzbar.</p>
+    <div class="hero-btns">
+      <a href="login.html" class="btn-primary">⚡ Kostenlos starten</a>
+      <a href="#features" class="btn-ghost">Mehr erfahren</a>
     </div>
-    <div class="tab-bar" id="tab-bar"></div>
-    <div class="code-wrap">
-      <div class="code-toolbar">
-        <div class="code-filename" id="code-filename">Dockerfile</div>
-        <div style="display:flex;gap:5px">
-          <button class="btn" id="reset-btn" onclick="resetFile()" style="display:none">Zurücksetzen</button>
-          <button class="btn" onclick="copyCode()">Kopieren</button>
-        </div>
-      </div>
-      <textarea class="code" id="code-editor" spellcheck="false" oninput="onEdit()" placeholder="API Key rechts eingeben und Generieren klicken..."></textarea>
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-num">11</div><div class="stat-label">Services</div></div>
+      <div class="stat"><div class="stat-num">&lt;30s</div><div class="stat-label">Pro Generierung</div></div>
+      <div class="stat"><div class="stat-num">100%</div><div class="stat-label">Sicher</div></div>
     </div>
-    <div class="dl-bar">
-      <div class="dl-info" id="dl-info">Noch keine Dateien</div>
-      <div class="dl-btns">
-        <button class="btn" onclick="dlCurrent()" id="dl-cur" style="display:none">Aktuelle Datei</button>
-        <button class="btn success" onclick="dlAll()" id="dl-all" style="display:none">Alle herunterladen</button>
-      </div>
-    </div>
-  </main>
+  </div>
+</section>
 
-  <aside class="sidebar-right">
-    <div class="api-box">
-      <div class="api-title">🔑 API Key</div>
-      <div class="api-desc">Dein Anthropic Key. Wird nur lokal gespeichert — nie an Server gesendet.</div>
-      <input type="password" class="api-input" id="api-key" placeholder="sk-ant-..." oninput="validateKey()" autocomplete="off" spellcheck="false">
-      <div class="api-status" id="api-status"></div>
-      <div class="api-hint">Key holen: <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a></div>
+<!-- Features -->
+<section id="features">
+  <div class="sec">
+    <div class="reveal">
+      <div class="sec-tag">Features</div>
+      <div class="sec-title">Alles was du brauchst</div>
+      <p class="sec-sub">Von Dockerfile bis Kubernetes — alle Konfigurationsdateien in einem Klick.</p>
     </div>
-    <div class="info-box">
-      <div class="info-box-title">Service Info</div>
-      <div id="info-rows"></div>
+    <div class="features-grid reveal">
+      <div class="feat"><div class="feat-icon">🐳</div><div class="feat-title">Dockerfile</div><div class="feat-text">Optimierte Dockerfiles mit Multi-stage Build und korrekten Base-Images.</div></div>
+      <div class="feat"><div class="feat-icon">🔧</div><div class="feat-title">docker-compose</div><div class="feat-text">Vollständige Compose-Files mit Healthchecks, Volumes und Abhängigkeiten.</div></div>
+      <div class="feat"><div class="feat-icon">☸️</div><div class="feat-title">Kubernetes</div><div class="feat-text">Deployment, Service und HPA — produktionsreif mit SecurityContext.</div></div>
+      <div class="feat"><div class="feat-icon">🔒</div><div class="feat-title">Zero-Trust Security</div><div class="feat-text">Non-root User, Read-only FS, No new privileges — per Toggle konfigurierbar.</div></div>
+      <div class="feat"><div class="feat-icon">🚀</div><div class="feat-title">CI/CD Templates</div><div class="feat-text">GitHub Actions und GitLab CI Pipelines werden automatisch generiert.</div></div>
+      <div class="feat"><div class="feat-icon">✏️</div><div class="feat-title">Direkt bearbeitbar</div><div class="feat-text">Jede Datei kann direkt im Editor angepasst werden.</div></div>
     </div>
-    <div class="sec-box">
-      <div class="sec-title">Sicherheit</div>
-      <div class="sec-item">Key nur lokal im Browser</div>
-      <div class="sec-item">Direktverbindung zu Anthropic</div>
-      <div class="sec-item">Kein Tracking, keine Cookies</div>
-      <div class="sec-item">Nur offizielle Docker Quellen</div>
-      <div class="sec-item">Alle Dateien bearbeitbar</div>
+
+    <!-- Code Preview -->
+    <div class="code-preview reveal">
+      <span class="c-muted"># Generiertes Dockerfile für Python Flask</span><br>
+      <span class="c-blue">FROM</span> python:3.12-slim<br><br>
+      <span class="c-blue">WORKDIR</span> /app<br>
+      <span class="c-blue">COPY</span> requirements.txt .<br>
+      <span class="c-blue">RUN</span> pip install --no-cache-dir -r requirements.txt<br>
+      <span class="c-blue">COPY</span> app.py .<br><br>
+      <span class="c-muted"># Zero-Trust: Non-root User</span><br>
+      <span class="c-blue">RUN</span> useradd -m -u 1000 appuser <span class="c-yellow">&amp;&amp;</span> chown -R appuser:appuser /app<br>
+      <span class="c-blue">USER</span> appuser<br><br>
+      <span class="c-blue">EXPOSE</span> <span class="c-green">5000</span><br>
+      <span class="c-blue">CMD</span> [<span class="c-green">"python"</span>, <span class="c-green">"app.py"</span>]
     </div>
-    <div class="info-box">
-      <div class="info-box-title">Tipps</div>
-      <div style="font-size:11px;color:var(--muted);line-height:1.7">
-        <p>Jede Datei direkt bearbeitbar.</p>
-        <p style="margin-top:4px">Geänderte Tabs sind <span style="color:#fb923c">orange</span>.</p>
-        <p style="margin-top:4px">"Zurücksetzen" stellt das Original wieder her.</p>
-      </div>
+  </div>
+</section>
+
+<!-- Services -->
+<section id="services">
+  <div class="sec">
+    <div class="reveal">
+      <div class="sec-tag">Unterstützte Services</div>
+      <div class="sec-title">11 Services, sofort bereit</div>
+      <p class="sec-sub">Von Python bis PostgreSQL — alle gängigen Frameworks und Datenbanken.</p>
     </div>
-  </aside>
-</div>
+    <div class="svc-grid reveal">
+      <div class="svc-chip"><div class="svc-chip-icon">🐍</div><div class="svc-chip-name">Python</div><div class="svc-chip-tag">Flask</div></div>
+      <div class="svc-chip"><div class="svc-chip-icon">🟢</div><div class="svc-chip-name">Node.js</div><div class="svc-chip-tag">Express</div></div>
+      <div class="svc-chip"><div class="svc-chip-icon">🐘</div><div class="svc-chip-name">PHP</div><div class="svc-chip-tag">+Nginx</div></div>
+      <div class="svc-chip"><div class="svc-chip-icon">🐹</div><div class="svc-chip-name">Go</div><div class="svc-chip-tag">Multi-stage</div></div>
+      <div class="svc-chip"><div class="svc-chip-icon">☕</div><div class="svc-chip-name">Java</div><div class="svc-chip-tag">Spring Boot</div></div>
+      <div class="svc-chip"><div class="svc-chip-icon">☁️</div><div class="svc-chip-name">Nextcloud</div><div class="svc-chip-tag">+MariaDB</div></div>
+      <div class="svc-chip"><div class="svc-chip-icon">⚡</div><div class="svc-chip-name">Nginx</div><div class="svc-chip-tag">Webserver</div></div>
+      <div class="svc-chip"><div class="svc-chip-icon">🪶</div><div class="svc-chip-name">Apache</div><div class="svc-chip-tag">Webserver</div></div>
+      <div class="svc-chip"><div class="svc-chip-icon">🐬</div><div class="svc-chip-name">MySQL</div><div class="svc-chip-tag">+Adminer</div></div>
+      <div class="svc-chip"><div class="svc-chip-icon">🦭</div><div class="svc-chip-name">MariaDB</div><div class="svc-chip-tag">+Adminer</div></div>
+      <div class="svc-chip"><div class="svc-chip-icon">🐘</div><div class="svc-chip-name">PostgreSQL</div><div class="svc-chip-tag">+pgAdmin</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-inner reveal">
+    <div class="cta-title">Bereit zum Starten?</div>
+    <p class="cta-sub">Erstelle ein kostenloses Konto und generiere deine erste Docker-Konfiguration in weniger als 30 Sekunden.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a href="login.html" class="btn-primary">⚡ Jetzt kostenlos starten</a>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-logo">container<span>gen</span></div>
+  <div class="footer-copy">© 2025 ContainerGen</div>
+</footer>
 
 <script>
-function saveKey(){try{sessionStorage.setItem('cg_k',btoa(document.getElementById('api-key').value));}catch(e){}}
-function loadKey(){try{const k=sessionStorage.getItem('cg_k');if(k)document.getElementById('api-key').value=atob(k);}catch(e){}}
-function validateKey(){
-  saveKey();
-  const val=document.getElementById('api-key').value.trim();
-  const inp=document.getElementById('api-key'),st=document.getElementById('api-status');
-  if(!val){inp.className='api-input';st.textContent='';return;}
-  if(val.startsWith('sk-ant-')&&val.length>20){inp.className='api-input valid';st.className='api-status ok';st.textContent='✓ Key erkannt';}
-  else{inp.className='api-input invalid';st.className='api-status err';st.textContent='✗ Format ungültig (sk-ant-...)';}
-}
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, {threshold:0.1});
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-const SVCS={
-  python:{name:'Python Flask',image:'python:3.12-slim',ports:[{l:'App',p:'5000',pub:true}],warn:null},
-  node:{name:'Node.js Express',image:'node:22-alpine',ports:[{l:'App',p:'3000',pub:true}],warn:null},
-  php:{name:'PHP + Nginx',image:'php:8.3-fpm+nginx',ports:[{l:'Web',p:'8080',pub:true},{l:'FPM',p:'9000',pub:false}],warn:'PHP-FPM+Nginx'},
-  go:{name:'Go',image:'golang:1.22-alpine',ports:[{l:'App',p:'8080',pub:true}],warn:null},
-  java:{name:'Java Spring Boot',image:'eclipse-temurin:21-jre',ports:[{l:'App',p:'8080',pub:true}],warn:'Build ~3-5 Min'},
-  nextcloud:{name:'Nextcloud',image:'nextcloud:28',ports:[{l:'Web',p:'8080',pub:true},{l:'DB',p:'3306',pub:false}],warn:null},
-  nginx:{name:'Nginx',image:'nginx:alpine',ports:[{l:'Web',p:'8080',pub:true}],warn:null},
-  apache:{name:'Apache',image:'httpd:alpine',ports:[{l:'Web',p:'8080',pub:true}],warn:null},
-  mysql:{name:'MySQL + Adminer',image:'mysql:8.0',ports:[{l:'MySQL',p:'3306',pub:true},{l:'Adminer',p:'8080',pub:true}],warn:null},
-  mariadb:{name:'MariaDB + Adminer',image:'mariadb:11',ports:[{l:'DB',p:'3306',pub:true},{l:'Adminer',p:'8080',pub:true}],warn:null},
-  postgres:{name:'PostgreSQL + pgAdmin',image:'postgres:16-alpine',ports:[{l:'PG',p:'5432',pub:true},{l:'pgAdmin',p:'8080',pub:true}],warn:null},
-};
-const SOURCES={python:'hub.docker.com/_/python, flask.palletsprojects.com',node:'hub.docker.com/_/node, expressjs.com',php:'hub.docker.com/_/php, hub.docker.com/_/nginx, php.net',go:'hub.docker.com/_/golang, go.dev/doc',java:'hub.docker.com/_/eclipse-temurin, spring.io',nextcloud:'hub.docker.com/_/nextcloud, docs.nextcloud.com',nginx:'hub.docker.com/_/nginx',apache:'hub.docker.com/_/httpd',mysql:'hub.docker.com/_/mysql',mariadb:'hub.docker.com/_/mariadb',postgres:'hub.docker.com/_/postgres, postgresql.org/docs'};
-const FILE_LISTS={python:'Dockerfile, docker-compose.yml, app.py, requirements.txt, k8s-deployment.yml, .github/workflows/ci-cd.yml, .gitlab-ci.yml, .env, README.md',node:'Dockerfile, docker-compose.yml, server.js, package.json, k8s-deployment.yml, .github/workflows/ci-cd.yml, .gitlab-ci.yml, .env, README.md',php:'Dockerfile, docker-compose.yml, nginx.conf, index.php, .env, README.md',go:'Dockerfile, docker-compose.yml, main.go, go.mod, k8s-deployment.yml, .github/workflows/ci-cd.yml, .gitlab-ci.yml, .env, README.md',java:'Dockerfile, docker-compose.yml, pom.xml, src/main/resources/application.properties, k8s-deployment.yml, .github/workflows/ci-cd.yml, .gitlab-ci.yml, .env, README.md',nextcloud:'docker-compose.yml, .env, README.md',nginx:'Dockerfile, docker-compose.yml, index.html, README.md',apache:'Dockerfile, docker-compose.yml, index.html, README.md',mysql:'docker-compose.yml, .env, init.sql, README.md',mariadb:'docker-compose.yml, .env, init.sql, README.md',postgres:'docker-compose.yml, .env, init.sql, README.md'};
-
-let svc='python',curFile=null,genFiles={},editFiles={},zt={nr:true,ro:true,np:true,cd:true};
-const g=id=>document.getElementById(id);
-function cfg(){return{name:g('proj-name').value||'myapp',port:g('proj-port').value||'8080',...zt,rep:g('k-rep')?.value||'2',ns:g('k-ns')?.value||'default',cr:g('k-cr')?.value||'100m',cl:g('k-cl')?.value||'500m',mr:g('k-mr')?.value||'128Mi',ml:g('k-ml')?.value||'512Mi'};}
-
-function selSvc(btn){
-  document.querySelectorAll('.svc-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');svc=btn.dataset.svc;genFiles={};editFiles={};curFile=null;
-  const isApp=!['nginx','apache','mysql','mariadb','postgres','nextcloud'].includes(svc);
-  ['zt-section','zt-div','k8s-section','k8s-div'].forEach(id=>g(id).style.display=isApp?'':'none');
-  g('proj-port').value=SVCS[svc].ports[0].p;
-  g('dl-cur').style.display='none';g('dl-all').style.display='none';
-  softUpdate();renderUI();
-}
-function togZT(row,key){zt[key]=!zt[key];row.classList.toggle('active',zt[key]);}
-function softUpdate(){
-  const s=SVCS[svc],c=cfg();
-  g('svc-title').textContent=s.name;g('svc-image').textContent=s.image;
-  let rows='';
-  s.ports.forEach((p,i)=>{const port=i===0?c.port:p.p;rows+=`<div class="info-row"><span class="ik">${p.l}</span><span class="iv ${p.pub?'':'int'}">localhost:${port}${p.pub?'':' (intern)'}</span></div>`;});
-  if(s.warn)rows+=`<div class="info-row"><span class="ik">Hinweis</span><span class="iv warn">${s.warn}</span></div>`;
-  rows+=`<div class="info-row"><span class="ik">Projekt</span><span class="iv">${c.name}</span></div>`;
-  rows+=`<div class="info-row"><span class="ik">Port</span><span class="iv">${c.port}</span></div>`;
-  g('info-rows').innerHTML=rows;
-}
-
-async function generate(){
-  const apiKey=g('api-key').value.trim();
-  if(!apiKey||!apiKey.startsWith('sk-ant-')){
-    g('api-key').focus();
-    g('api-status').textContent='⚠ Bitte API Key eingeben';
-    g('api-status').className='api-status err';
-    return;
-  }
-  const c=cfg(),s=SVCS[svc];
-  g('gen-btn').disabled=true;g('gen-text').textContent='Generiert...';
-  g('gen-icon').className='spin';g('gen-icon').textContent='';
-  g('gen-status').textContent='Verbinde...';
-  try{
-    const response=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',max_tokens:6000,
-        system:`Du bist Docker-Experte. Antworte NUR mit einem validen JSON-Objekt (Dateiname: Inhalt). Keine Erklärungen, kein Markdown. Verwende NUR offizielle Quellen: ${SOURCES[svc]}. Neueste stabile Versionen. Alle Dateien sofort funktionsfähig.`,
-        messages:[{role:'user',content:`Erstelle Docker-Konfiguration:\nService: ${s.name} | Projekt: ${c.name} | Port: ${c.port}\nZero-Trust: Non-root=${c.nr}, ReadOnly=${c.ro}, NoPrivEsc=${c.np}, DropCaps=${c.cd}\nKubernetes: ${c.rep} Replicas, Namespace ${c.ns}, CPU ${c.cr}/${c.cl}, Mem ${c.mr}/${c.ml}\nDateien: ${FILE_LISTS[svc]}\nREADME auf Deutsch. Nur JSON zurückgeben.`}]
-      })
-    });
-    if(!response.ok){const e=await response.json().catch(()=>({}));throw new Error(e.error?.message||`API Fehler ${response.status}`);}
-    const data=await response.json();
-    const text=(data.content?.[0]?.text||'').trim().replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/\s*```$/,'');
-    let parsed;
-    try{parsed=JSON.parse(text);}
-    catch{const m=text.match(/\{[\s\S]*\}/);if(m)parsed=JSON.parse(m[0]);else throw new Error('Antwort konnte nicht verarbeitet werden.');}
-    genFiles=parsed;editFiles={};curFile=Object.keys(genFiles)[0];
-    g('gen-status').textContent=`✓ ${Object.keys(genFiles).length} Dateien generiert`;
-    g('dl-cur').style.display='';g('dl-all').style.display='';
-    renderUI();setTimeout(()=>g('gen-status').textContent='',3000);
-  }catch(e){
-    const clean=e.message.replace(/sk-ant-[^\s]*/g,'[KEY]');
-    g('gen-status').textContent='✗ '+clean;
-  }finally{
-    g('gen-btn').disabled=false;g('gen-text').textContent='Konfiguration generieren';
-    g('gen-icon').className='';g('gen-icon').textContent='⚡';
-  }
-}
-
-function renderUI(){
-  softUpdate();
-  const fl=Object.keys(genFiles);
-  if(!fl.length){g('tab-bar').innerHTML='';g('code-editor').value='';g('dl-info').textContent='Noch keine Dateien';return;}
-  if(!curFile||!genFiles[curFile])curFile=fl[0];
-  g('tab-bar').innerHTML=fl.map(f=>{const m=editFiles[f]!==undefined;return`<button class="tab-btn ${f===curFile?'active':''} ${m?'modified':''}" onclick="switchTab('${f}')">${f.split('/').pop()}</button>`;}).join('');
-  const content=editFiles[curFile]!==undefined?editFiles[curFile]:(genFiles[curFile]||'');
-  const mod=editFiles[curFile]!==undefined;
-  g('code-editor').value=content;g('code-editor').className=`code ${mod?'modified':''}`;
-  g('code-editor').placeholder='';
-  g('code-filename').textContent=curFile;g('code-filename').className=`code-filename ${mod?'modified':''}`;
-  g('reset-btn').style.display=mod?'':'none';
-  g('dl-info').textContent=`${fl.length} Dateien`;
-}
-function switchTab(f){curFile=f;renderUI();}
-function onEdit(){
-  if(!curFile)return;
-  const val=g('code-editor').value;
-  if(val===(genFiles[curFile]||''))delete editFiles[curFile];else editFiles[curFile]=val;
-  const mod=editFiles[curFile]!==undefined;
-  g('reset-btn').style.display=mod?'':'none';
-  g('code-editor').className=`code ${mod?'modified':''}`;
-  g('code-filename').className=`code-filename ${mod?'modified':''}`;
-  const fl=Object.keys(genFiles);
-  g('tab-bar').innerHTML=fl.map(f=>{const m=editFiles[f]!==undefined;return`<button class="tab-btn ${f===curFile?'active':''} ${m?'modified':''}" onclick="switchTab('${f}')">${f.split('/').pop()}</button>`;}).join('');
-}
-function resetFile(){if(!curFile)return;delete editFiles[curFile];renderUI();}
-function copyCode(){if(!g('code-editor').value)return;navigator.clipboard.writeText(g('code-editor').value).then(()=>{const b=event.target;b.textContent='Kopiert!';setTimeout(()=>b.textContent='Kopieren',1400);});}
-function getC(f){return editFiles[f]!==undefined?editFiles[f]:(genFiles[f]||'');}
-function dlCurrent(){if(!curFile)return;const a=document.createElement('a');a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(getC(curFile));a.download=curFile.split('/').pop();a.click();}
-function dlAll(){for(const f of Object.keys(genFiles)){const a=document.createElement('a');a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(getC(f));a.download=f.split('/').pop();a.click();}}
-
-loadKey();validateKey();
-['zt-section','zt-div','k8s-section','k8s-div'].forEach(id=>{if(g(id))g(id).style.display='';});
-softUpdate();
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const t = document.querySelector(a.getAttribute('href'));
+    if(t) t.scrollIntoView({behavior:'smooth'});
+  });
+});
 </script>
 </body>
 </html>
