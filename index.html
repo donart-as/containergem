@@ -385,24 +385,42 @@ async function loadApp(user) {
 
 async function startCheckout() {
   const { data: { session } } = await sb.auth.getSession();
-  if (!session) return;
+  if (!session) {
+    alert("Nicht eingeloggt");
+    return;
+  }
 
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/create-subscription`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json'
+      }
     });
-    const data = await res.json();
-    if (data.url) window.location.href = data.url;
-    else alert('Fehler: ' + (data.error || 'Unbekannt'));
-  } catch (e) {
-    alert('Fehler beim Starten des Checkouts.');
-  }
-}
 
-async function logout() {
-  await sb.auth.signOut();
-  location.reload();
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error("Server hat keine gültige Antwort geschickt");
+    }
+
+    if (!res.ok) {
+      console.error(data);
+      throw new Error(data.error || "Unbekannter Serverfehler");
+    }
+
+    if (!data.url) {
+      throw new Error("Keine Checkout URL erhalten");
+    }
+
+    window.location.href = data.url;
+
+  } catch (e) {
+    console.error(e);
+    alert("Fehler: " + e.message);
+  }
 }
 
 // ── Docker Versionen laden ─────────────────────────────────────
