@@ -3,22 +3,47 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ContainerGen — App</title>
+<title>ContainerGen</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#080b12;--surface:#0e1420;--surface2:#131c2e;--border:#1a2236;--border2:#243047;--text:#e2e8f0;--muted:#4a5568;--accent:#3b82f6;--accent2:#1d4ed8;--green:#22c55e;--mono:'JetBrains Mono',monospace;--sans:'Sora',sans-serif}
+:root{
+  --bg:#080b12;--surface:#0e1420;--surface2:#131c2e;
+  --border:#1a2236;--border2:#243047;--text:#e2e8f0;
+  --muted:#4a5568;--accent:#3b82f6;--accent2:#1d4ed8;
+  --green:#22c55e;--mono:'JetBrains Mono',monospace;--sans:'Sora',sans-serif;
+}
 body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh}
-/* Loading */
-.loading{display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:14px;color:var(--muted);font-family:var(--mono)}
-/* App */
-.app{display:none}
+
+/* ── Login ── */
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2.5rem;width:100%;max-width:380px}
+.login-logo{font-family:var(--mono);font-size:20px;font-weight:600;text-align:center;margin-bottom:.3rem}
+.login-logo span{color:var(--accent)}
+.login-sub{font-size:13px;color:var(--muted);text-align:center;margin-bottom:1.8rem}
+.login-tabs{display:flex;gap:4px;background:var(--bg);border-radius:8px;padding:3px;margin-bottom:1.5rem}
+.login-tab{flex:1;padding:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:6px;font-family:var(--sans);font-size:13px;font-weight:600;transition:.12s}
+.login-tab.active{background:var(--surface2);color:var(--text)}
+.lfield{margin-bottom:12px}
+.lfield label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em}
+.lfield input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:10px 12px;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;transition:.12s}
+.lfield input:focus{border-color:var(--accent)}
+.login-btn{width:100%;padding:11px;background:var(--accent);border:none;border-radius:8px;color:white;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:.15s;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px}
+.login-btn:hover{background:var(--accent2)}
+.login-btn:disabled{opacity:.4;cursor:not-allowed}
+.login-msg{font-size:12px;text-align:center;margin-top:10px;min-height:16px}
+.login-msg.err{color:#f87171}
+.login-msg.ok{color:var(--green)}
+.back-link{display:block;text-align:center;margin-top:1rem;font-size:13px;color:var(--muted);text-decoration:none;transition:color .12s}
+.back-link:hover{color:var(--text)}
+
+/* ── App ── */
+.app-screen{display:none}
 .shell{display:grid;grid-template-columns:260px 1fr 240px;grid-template-rows:54px 1fr;min-height:100vh}
 .topbar{grid-column:1/-1;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 1.5rem;gap:10px}
 .logo{font-family:var(--mono);font-size:15px;font-weight:600}
 .logo span{color:var(--accent)}
-.logo a{color:var(--text);text-decoration:none}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
 .user-email{font-size:11px;color:var(--muted);font-family:var(--mono)}
 .logout-btn{font-size:11px;background:transparent;border:1px solid var(--border);border-radius:5px;padding:4px 10px;color:var(--muted);cursor:pointer;font-family:var(--sans);transition:.12s}
@@ -97,18 +122,50 @@ textarea.code.modified{border-color:#7c3506}
 </head>
 <body>
 
-<div class="loading" id="loading">Lade...</div>
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- LOGIN SCREEN                                              -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">container<span>gen</span></div>
+    <div class="login-sub">Docker Configs in Sekunden generieren</div>
+    <div class="login-tabs">
+      <button class="login-tab active" onclick="switchAuthTab('login',this)">Einloggen</button>
+      <button class="login-tab" onclick="switchAuthTab('register',this)">Registrieren</button>
+    </div>
+    <div class="lfield">
+      <label>E-Mail</label>
+      <input type="email" id="auth-email" placeholder="deine@email.com" autocomplete="email">
+    </div>
+    <div class="lfield">
+      <label>Passwort</label>
+      <input type="password" id="auth-password" placeholder="••••••••"
+        autocomplete="current-password" onkeydown="if(event.key==='Enter')doAuth()">
+    </div>
+    <button class="login-btn" id="auth-btn" onclick="doAuth()">
+      <span id="auth-icon"></span>
+      <span id="auth-text">Einloggen</span>
+    </button>
+    <div class="login-msg" id="auth-msg"></div>
+    <a href="index.html" class="back-link">← Zurück zur Startseite</a>
+  </div>
+</div>
 
-<div class="app" id="app">
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- APP SCREEN                                                -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="app-screen" id="app-screen">
   <div class="shell">
+
     <header class="topbar">
-      <div class="logo"><a href="index.html">container<span>gen</span></a></div>
+      <div class="logo">container<span>gen</span></div>
       <div class="topbar-right">
         <span class="user-email" id="user-email"></span>
         <button class="logout-btn" onclick="logout()">Abmelden</button>
       </div>
     </header>
 
+    <!-- Links: Services + Config -->
     <aside class="sidebar-left">
       <div>
         <div class="section-label">Service</div>
@@ -171,6 +228,7 @@ textarea.code.modified{border-color:#7c3506}
       </div>
     </aside>
 
+    <!-- Mitte: Code Editor -->
     <main class="main">
       <div class="info-bar">
         <div style="display:flex;align-items:center;gap:8px">
@@ -199,6 +257,7 @@ textarea.code.modified{border-color:#7c3506}
       </div>
     </main>
 
+    <!-- Rechts: Info -->
     <aside class="sidebar-right">
       <div class="info-box">
         <div class="info-box-title">Service Info</div>
@@ -221,38 +280,95 @@ textarea.code.modified{border-color:#7c3506}
         </div>
       </div>
     </aside>
+
   </div>
 </div>
 
 <script>
-// ══════════════════════════════════════
-// SUPABASE KEYS
-// ══════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+// SUPABASE KEYS — BEREITS EINGETRAGEN, NICHTS ÄNDERN
+// ══════════════════════════════════════════════════════════════
 const SUPABASE_URL  = 'https://bsjaqlxzhdrmskzglyot.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzamFxbHh6aGRybXNremdseW90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMTkyMTIsImV4cCI6MjA5MTU5NTIxMn0.3A2NOeLWq5k1lP-0uB7MCpLIGvrqXYLa_0c3xhNwFV4';
-// ══════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-// ── Session prüfen beim Laden ──────────────────────────────────
-;(async()=>{
-  const {data:{session}} = await sb.auth.getSession();
-  if(!session){
-    // Nicht eingeloggt → zur Login-Seite
-    window.location.href = 'login.html';
-    return;
-  }
-  // Eingeloggt → App zeigen
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  document.getElementById('user-email').textContent = session.user.email;
-  ['zt-section','zt-div','k8s-section','k8s-div'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='';});
-  softUpdate();
-})();
+// ── Auth ───────────────────────────────────────────────────────
+let authMode = 'login';
 
-async function logout(){
+function switchAuthTab(mode, btn) {
+  authMode = mode;
+  document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('auth-text').textContent = mode === 'login' ? 'Einloggen' : 'Registrieren';
+  document.getElementById('auth-msg').className = 'login-msg';
+  document.getElementById('auth-msg').textContent = '';
+}
+
+async function doAuth() {
+  const email    = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const btn      = document.getElementById('auth-btn');
+
+  if (!email || !email.includes('@')) { setAuthMsg('Bitte gültige E-Mail eingeben.', 'err'); return; }
+  if (password.length < 6)            { setAuthMsg('Passwort mindestens 6 Zeichen.', 'err'); return; }
+
+  btn.disabled = true;
+  document.getElementById('auth-icon').innerHTML = '<span class="spin"></span>';
+  document.getElementById('auth-text').textContent = '...';
+
+  try {
+    if (authMode === 'login') {
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      // ✅ Login erfolgreich → App zeigen (GLEICHE SEITE = Session funktioniert!)
+      showApp(data.user);
+    } else {
+      const { error } = await sb.auth.signUp({ email, password });
+      if (error) throw error;
+      setAuthMsg('Registriert! Bitte E-Mail bestätigen, dann einloggen.', 'ok');
+      // Automatisch auf Login-Tab wechseln
+      authMode = 'login';
+      document.querySelectorAll('.login-tab').forEach((t,i) => t.classList.toggle('active', i===0));
+    }
+  } catch(e) {
+    setAuthMsg(translateErr(e.message), 'err');
+  } finally {
+    btn.disabled = false;
+    document.getElementById('auth-icon').innerHTML = '';
+    document.getElementById('auth-text').textContent = authMode === 'login' ? 'Einloggen' : 'Registrieren';
+  }
+}
+
+function setAuthMsg(text, type) {
+  const m = document.getElementById('auth-msg');
+  m.textContent = text;
+  m.className = 'login-msg ' + type;
+}
+
+function translateErr(msg) {
+  if (msg.includes('Invalid login credentials')) return 'Falsche E-Mail oder Passwort.';
+  if (msg.includes('Email not confirmed'))       return 'E-Mail noch nicht bestätigt.';
+  if (msg.includes('User already registered'))   return 'E-Mail bereits registriert. Bitte einloggen.';
+  if (msg.includes('Password should be'))        return 'Passwort zu schwach. Mindestens 6 Zeichen.';
+  return msg;
+}
+
+function showApp(user) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+  document.getElementById('user-email').textContent = user.email;
+  softUpdate();
+}
+
+async function logout() {
   await sb.auth.signOut();
-  window.location.href = 'login.html';
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('auth-email').value = '';
+  document.getElementById('auth-password').value = '';
+  document.getElementById('auth-msg').textContent = '';
 }
 
 // ── Services ───────────────────────────────────────────────────
@@ -270,27 +386,30 @@ const SVCS = {
   postgres:  {name:'PostgreSQL + pgAdmin', image:'postgres:16-alpine',      ports:[{l:'PG',p:'5432',pub:true},{l:'pgAdmin',p:'8080',pub:true}], warn:null},
 };
 
-let svc='python',curFile=null,genFiles={},editFiles={},zt={nr:true,ro:true,np:true,cd:true};
-const g=id=>document.getElementById(id);
+let svc='python', curFile=null, genFiles={}, editFiles={}, zt={nr:true,ro:true,np:true,cd:true};
+const g = id => document.getElementById(id);
 function cfg(){return{name:g('proj-name').value||'myapp',port:g('proj-port').value||'8080',...zt,rep:g('k-rep')?.value||'2',ns:g('k-ns')?.value||'default',cr:g('k-cr')?.value||'100m',cl:g('k-cl')?.value||'500m',mr:g('k-mr')?.value||'128Mi',ml:g('k-ml')?.value||'512Mi'};}
 
-function selSvc(btn){
+function selSvc(btn) {
   document.querySelectorAll('.svc-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');svc=btn.dataset.svc;genFiles={};editFiles={};curFile=null;
+  btn.classList.add('active'); svc=btn.dataset.svc; genFiles={}; editFiles={}; curFile=null;
   const isApp=!['nginx','apache','mysql','mariadb','postgres','nextcloud'].includes(svc);
   ['zt-section','zt-div','k8s-section','k8s-div'].forEach(id=>g(id).style.display=isApp?'':'none');
   g('proj-port').value=SVCS[svc].ports[0].p;
-  g('dl-cur').style.display='none';g('dl-all').style.display='none';
-  softUpdate();renderUI();
+  g('dl-cur').style.display='none'; g('dl-all').style.display='none';
+  softUpdate(); renderUI();
 }
 
 function togZT(row,key){zt[key]=!zt[key];row.classList.toggle('active',zt[key]);}
 
-function softUpdate(){
-  const s=SVCS[svc],c=cfg();
-  g('svc-title').textContent=s.name;g('svc-image').textContent=s.image;
+function softUpdate() {
+  const s=SVCS[svc], c=cfg();
+  g('svc-title').textContent=s.name; g('svc-image').textContent=s.image;
   let rows='';
-  s.ports.forEach((p,i)=>{const port=i===0?c.port:p.p;rows+=`<div class="info-row"><span class="ik">${p.l}</span><span class="iv ${p.pub?'':'int'}">localhost:${port}${p.pub?'':' (intern)'}</span></div>`;});
+  s.ports.forEach((p,i)=>{
+    const port=i===0?c.port:p.p;
+    rows+=`<div class="info-row"><span class="ik">${p.l}</span><span class="iv ${p.pub?'':'int'}">localhost:${port}${p.pub?'':' (intern)'}</span></div>`;
+  });
   if(s.warn)rows+=`<div class="info-row"><span class="ik">Hinweis</span><span class="iv warn">${s.warn}</span></div>`;
   rows+=`<div class="info-row"><span class="ik">Projekt</span><span class="iv">${c.name}</span></div>`;
   rows+=`<div class="info-row"><span class="ik">Port</span><span class="iv">${c.port}</span></div>`;
@@ -298,45 +417,56 @@ function softUpdate(){
 }
 
 // ── Generierung ────────────────────────────────────────────────
-async function generate(){
-  const {data:{session}}=await sb.auth.getSession();
-  if(!session){window.location.href='login.html';return;}
+// Session kommt direkt aus Supabase — funktioniert weil alles in einer Datei ist
+async function generate() {
+  const {data:{session}} = await sb.auth.getSession();
+  if (!session) { setAuthMsg('Session abgelaufen. Bitte neu einloggen.','err'); showLogin(); return; }
 
   const c=cfg();
-  g('gen-btn').disabled=true;g('gen-text').textContent='Generiert...';
-  g('gen-icon').className='spin';g('gen-icon').textContent='';
+  g('gen-btn').disabled=true; g('gen-text').textContent='Generiert...';
+  g('gen-icon').className='spin'; g('gen-icon').textContent='';
   g('gen-status').textContent='Verbinde mit Server...';
 
-  try{
-    const res=await fetch(`${SUPABASE_URL}/functions/v1/generate`,{
-      method:'POST',
-      headers:{
-        'Authorization':`Bearer ${session.access_token}`,
-        'Content-Type':'application/json',
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/generate`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
       },
-      body:JSON.stringify({
-        service:svc,projectName:c.name,port:c.port,
-        zeroTrust:{nr:c.nr,ro:c.ro,np:c.np,cd:c.cd},
-        kubernetes:{rep:c.rep,ns:c.ns,cr:c.cr,cl:c.cl,mr:c.mr,ml:c.ml},
+      body: JSON.stringify({
+        service: svc,
+        projectName: c.name,
+        port: c.port,
+        zeroTrust: {nr:c.nr, ro:c.ro, np:c.np, cd:c.cd},
+        kubernetes: {rep:c.rep, ns:c.ns, cr:c.cr, cl:c.cl, mr:c.mr, ml:c.ml},
       })
     });
-    const data=await res.json();
-    if(!res.ok)throw new Error(data.error||`Fehler ${res.status}`);
-    genFiles=data.files;editFiles={};curFile=Object.keys(genFiles)[0];
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Fehler ${res.status}`);
+
+    genFiles=data.files; editFiles={}; curFile=Object.keys(genFiles)[0];
     g('gen-status').textContent=`✓ ${Object.keys(genFiles).length} Dateien generiert`;
-    g('dl-cur').style.display='';g('dl-all').style.display='';
+    g('dl-cur').style.display=''; g('dl-all').style.display='';
     renderUI();
-    setTimeout(()=>g('gen-status').textContent='',3000);
-  }catch(e){
-    g('gen-status').textContent='✗ '+e.message;
-  }finally{
-    g('gen-btn').disabled=false;g('gen-text').textContent='Konfiguration generieren';
-    g('gen-icon').className='';g('gen-icon').textContent='⚡';
+    setTimeout(()=>g('gen-status').textContent='', 3000);
+
+  } catch(e) {
+    g('gen-status').textContent='✗ ' + e.message;
+  } finally {
+    g('gen-btn').disabled=false; g('gen-text').textContent='Konfiguration generieren';
+    g('gen-icon').className=''; g('gen-icon').textContent='⚡';
   }
 }
 
+function showLogin(){
+  document.getElementById('app-screen').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+}
+
 // ── UI ─────────────────────────────────────────────────────────
-function renderUI(){
+function renderUI() {
   softUpdate();
   const fl=Object.keys(genFiles);
   if(!fl.length){g('tab-bar').innerHTML='';g('code-editor').value='';g('dl-info').textContent='Noch keine Dateien';return;}
@@ -344,17 +474,19 @@ function renderUI(){
   g('tab-bar').innerHTML=fl.map(f=>{const m=editFiles[f]!==undefined;return`<button class="tab-btn ${f===curFile?'active':''} ${m?'modified':''}" onclick="switchFT('${f}')">${f.split('/').pop()}</button>`;}).join('');
   const content=editFiles[curFile]!==undefined?editFiles[curFile]:(genFiles[curFile]||'');
   const mod=editFiles[curFile]!==undefined;
-  g('code-editor').value=content;g('code-editor').className=`code ${mod?'modified':''}`;
+  g('code-editor').value=content; g('code-editor').className=`code ${mod?'modified':''}`;
   g('code-editor').placeholder='';
-  g('code-filename').textContent=curFile;g('code-filename').className=`code-filename ${mod?'modified':''}`;
+  g('code-filename').textContent=curFile; g('code-filename').className=`code-filename ${mod?'modified':''}`;
   g('reset-btn').style.display=mod?'':'none';
   g('dl-info').textContent=`${fl.length} Dateien`;
 }
+
 function switchFT(f){curFile=f;renderUI();}
+
 function onEdit(){
   if(!curFile)return;
   const val=g('code-editor').value;
-  if(val===(genFiles[curFile]||''))delete editFiles[curFile];else editFiles[curFile]=val;
+  if(val===(genFiles[curFile]||''))delete editFiles[curFile]; else editFiles[curFile]=val;
   const mod=editFiles[curFile]!==undefined;
   g('reset-btn').style.display=mod?'':'none';
   g('code-editor').className=`code ${mod?'modified':''}`;
@@ -362,11 +494,24 @@ function onEdit(){
   const fl=Object.keys(genFiles);
   g('tab-bar').innerHTML=fl.map(f=>{const m=editFiles[f]!==undefined;return`<button class="tab-btn ${f===curFile?'active':''} ${m?'modified':''}" onclick="switchFT('${f}')">${f.split('/').pop()}</button>`;}).join('');
 }
+
 function resetFile(){if(!curFile)return;delete editFiles[curFile];renderUI();}
 function copyCode(){if(!g('code-editor').value)return;navigator.clipboard.writeText(g('code-editor').value).then(()=>{const b=event.target;b.textContent='Kopiert!';setTimeout(()=>b.textContent='Kopieren',1400);});}
 function getC(f){return editFiles[f]!==undefined?editFiles[f]:(genFiles[f]||'');}
 function dlCurrent(){if(!curFile)return;const a=document.createElement('a');a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(getC(curFile));a.download=curFile.split('/').pop();a.click();}
 function dlAll(){for(const f of Object.keys(genFiles)){const a=document.createElement('a');a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(getC(f));a.download=f.split('/').pop();a.click();}}
+
+// ── Init: Session prüfen beim Laden ───────────────────────────
+;(async()=>{
+  const {data:{session}} = await sb.auth.getSession();
+  if(session) showApp(session.user);
+  // Auth-Änderungen beobachten
+  sb.auth.onAuthStateChange((event,session)=>{
+    if(event==='SIGNED_IN' && session) showApp(session.user);
+    if(event==='SIGNED_OUT') showLogin();
+  });
+  ['zt-section','zt-div','k8s-section','k8s-div'].forEach(id=>{if(g(id))g(id).style.display='';});
+})();
 </script>
 </body>
 </html>
