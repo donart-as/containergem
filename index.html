@@ -4,149 +4,430 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ContainerGen — Docker Configs in Sekunden</title>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<meta name="description" content="Produktionsreife Dockerfiles, docker-compose und Kubernetes-Manifeste automatisch generieren.">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600;12..96,700;12..96,800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#03050a;--surface:#080d18;--border:#0f1a2e;--text:#e8edf5;--muted:#4a5568;--accent:#0ea5e9;--accent2:#0284c7;--mono:'JetBrains Mono',monospace;--display:'Bricolage Grotesque',sans-serif}
+:root{
+  --bg:#03050a;--surface:#080d18;--surface2:#0d1520;
+  --border:#0f1a2e;--border2:#1a2e4a;
+  --text:#e8edf5;--muted:#4a5568;--muted2:#64748b;
+  --accent:#0ea5e9;--accent2:#0284c7;--accent3:#38bdf8;
+  --mono:'JetBrains Mono',monospace;--display:'Bricolage Grotesque',sans-serif;
+}
 html{scroll-behavior:smooth}
-body{font-family:var(--display);background:var(--bg);color:var(--text);overflow-x:hidden}
-.bg-grid{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(14,165,233,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(14,165,233,.03) 1px,transparent 1px);background-size:60px 60px;pointer-events:none}
-.bg-glow{position:fixed;top:-20vh;left:50%;transform:translateX(-50%);width:80vw;height:50vh;background:radial-gradient(ellipse,rgba(14,165,233,.07) 0%,transparent 70%);pointer-events:none;z-index:0}
-nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;padding:0 2rem;height:60px;background:rgba(3,5,10,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
-.nav-logo{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--text);text-decoration:none}
+body{font-family:var(--display);background:var(--bg);color:var(--text);overflow-x:hidden;line-height:1.6}
+
+/* ── Background ── */
+.bg-grid{position:fixed;inset:0;z-index:0;
+  background-image:linear-gradient(rgba(14,165,233,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(14,165,233,.025) 1px,transparent 1px);
+  background-size:72px 72px;pointer-events:none}
+.bg-glow-top{position:fixed;top:-25vh;left:50%;transform:translateX(-50%);
+  width:90vw;height:55vh;
+  background:radial-gradient(ellipse,rgba(14,165,233,.06) 0%,transparent 70%);
+  pointer-events:none;z-index:0}
+.bg-glow-bottom{position:fixed;bottom:-20vh;right:-10vw;
+  width:60vw;height:50vh;
+  background:radial-gradient(ellipse,rgba(14,165,233,.04) 0%,transparent 70%);
+  pointer-events:none;z-index:0}
+
+/* ── Nav ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;padding:0 2.5rem;height:62px;
+  background:rgba(3,5,10,.8);backdrop-filter:blur(24px);
+  border-bottom:1px solid rgba(14,165,233,.08)}
+.nav-logo{font-family:var(--mono);font-size:15px;font-weight:600;
+  color:var(--text);text-decoration:none;letter-spacing:-.5px}
 .nav-logo span{color:var(--accent)}
-.nav-links{margin-left:auto;display:flex;align-items:center;gap:2rem}
-.nav-links a{font-size:14px;color:var(--muted);text-decoration:none;transition:color .15s}
-.nav-links a:hover{color:var(--text)}
-.nav-cta{background:var(--accent)!important;color:white!important;padding:7px 18px;border-radius:7px;font-weight:600!important}
-.nav-cta:hover{background:var(--accent2)!important}
-.hero{position:relative;z-index:1;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:8rem 2rem 6rem}
-.hero-inner{max-width:800px}
-.hero-badge{display:inline-flex;align-items:center;gap:7px;background:rgba(14,165,233,.1);border:1px solid rgba(14,165,233,.2);border-radius:20px;padding:5px 16px;font-size:12px;font-family:var(--mono);color:var(--accent);margin-bottom:2rem;animation:fadeUp .6s ease both}
-.dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-h1{font-size:clamp(2.5rem,6vw,4.8rem);font-weight:800;line-height:1.1;letter-spacing:-.03em;margin-bottom:1.5rem;animation:fadeUp .6s .1s ease both}
-h1 em{font-style:normal;background:linear-gradient(135deg,var(--accent),#38bdf8,#7dd3fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.hero-sub{font-size:1.1rem;color:var(--muted);max-width:540px;margin:0 auto 2.5rem;line-height:1.7;font-weight:300;animation:fadeUp .6s .2s ease both}
-.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;animation:fadeUp .6s .3s ease both}
-.btn-primary{background:var(--accent);color:white;padding:13px 28px;border-radius:9px;font-size:15px;font-weight:700;text-decoration:none;transition:.15s;display:inline-flex;align-items:center;gap:7px;box-shadow:0 0 30px rgba(14,165,233,.25)}
-.btn-primary:hover{background:var(--accent2)}
-.btn-ghost{background:transparent;color:var(--text);padding:13px 28px;border-radius:9px;font-size:15px;font-weight:600;text-decoration:none;border:1px solid var(--border);transition:.15s}
-.btn-ghost:hover{border-color:var(--muted)}
-.hero-stats{margin-top:4rem;display:flex;gap:2.5rem;justify-content:center;flex-wrap:wrap;animation:fadeUp .6s .4s ease both}
-.stat-num{font-size:1.8rem;font-weight:800;font-family:var(--mono)}
-.stat-label{font-size:12px;color:var(--muted);margin-top:2px}
-@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:2.5rem}
+.nav-link{font-size:13px;color:var(--muted2);text-decoration:none;
+  font-weight:400;transition:color .15s;letter-spacing:.01em}
+.nav-link:hover{color:var(--text)}
+.nav-btn{background:var(--accent);color:white;padding:7px 20px;
+  border-radius:7px;font-size:13px;font-weight:600;text-decoration:none;
+  transition:.15s;letter-spacing:.01em}
+.nav-btn:hover{background:var(--accent2)}
+
+/* ── Hero ── */
+.hero{position:relative;z-index:1;min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  text-align:center;padding:9rem 2rem 7rem}
+.hero-inner{max-width:820px}
+
+.hero-label{display:inline-flex;align-items:center;gap:8px;
+  background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.15);
+  border-radius:4px;padding:5px 14px;font-size:11px;
+  font-family:var(--mono);color:var(--accent);margin-bottom:2.25rem;
+  letter-spacing:.08em;text-transform:uppercase;
+  animation:fadeUp .5s ease both}
+.hero-label-dot{width:5px;height:5px;border-radius:50%;
+  background:var(--accent);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+h1{font-size:clamp(2.8rem,6vw,5rem);font-weight:800;line-height:1.05;
+  letter-spacing:-.04em;margin-bottom:1.75rem;
+  animation:fadeUp .5s .08s ease both}
+h1 .hl{background:linear-gradient(125deg,var(--accent) 0%,var(--accent3) 60%,#7dd3fc 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+.hero-desc{font-size:1.1rem;color:var(--muted2);max-width:580px;
+  margin:0 auto 2.75rem;line-height:1.8;font-weight:300;
+  animation:fadeUp .5s .16s ease both}
+
+.hero-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;
+  animation:fadeUp .5s .24s ease both}
+.btn-cta{background:var(--accent);color:white;padding:12px 28px;
+  border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;
+  transition:.15s;display:inline-flex;align-items:center;gap:8px;
+  box-shadow:0 0 28px rgba(14,165,233,.2);letter-spacing:.01em}
+.btn-cta:hover{background:var(--accent2);box-shadow:0 0 40px rgba(14,165,233,.3)}
+.btn-outline{background:transparent;color:var(--muted2);padding:12px 28px;
+  border-radius:8px;font-size:14px;font-weight:500;text-decoration:none;
+  border:1px solid var(--border2);transition:.15s;letter-spacing:.01em}
+.btn-outline:hover{border-color:var(--muted2);color:var(--text)}
+
+.hero-meta{margin-top:4.5rem;display:flex;gap:3rem;
+  justify-content:center;flex-wrap:wrap;
+  animation:fadeUp .5s .32s ease both}
+.meta-item{text-align:center}
+.meta-num{font-size:1.75rem;font-weight:800;font-family:var(--mono);
+  color:var(--text);line-height:1}
+.meta-label{font-size:11px;color:var(--muted);margin-top:4px;
+  letter-spacing:.06em;text-transform:uppercase}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+
+/* ── Sections ── */
 section{position:relative;z-index:1}
-.sec{max-width:1100px;margin:0 auto;padding:6rem 2rem}
-.sec-tag{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.75rem}
-.sec-title{font-size:clamp(1.8rem,3.5vw,2.6rem);font-weight:800;letter-spacing:-.02em;margin-bottom:1rem;line-height:1.2}
-.sec-sub{font-size:1rem;color:var(--muted);max-width:540px;line-height:1.7;font-weight:300}
-.features-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-top:3.5rem}
-.feat{background:var(--surface);padding:1.75rem;transition:background .2s}
-.feat:hover{background:#0d1525}
-.feat-icon{font-size:1.8rem;margin-bottom:1rem}
-.feat-title{font-size:15px;font-weight:700;margin-bottom:.5rem}
-.feat-text{font-size:13px;color:var(--muted);line-height:1.6;font-weight:300}
-.svc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:3rem}
-.svc-chip{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center;transition:.15s}
-.svc-chip:hover{border-color:var(--accent);background:rgba(14,165,233,.05)}
-.svc-chip-icon{font-size:1.5rem;margin-bottom:.4rem}
-.svc-chip-name{font-size:13px;font-weight:600}
-.svc-chip-tag{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px}
-.cta-section{background:linear-gradient(135deg,rgba(14,165,233,.05),rgba(14,165,233,.02));border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
-.cta-inner{max-width:700px;margin:0 auto;padding:6rem 2rem;text-align:center}
-.cta-title{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.02em;margin-bottom:1rem}
-.cta-sub{font-size:1rem;color:var(--muted);margin-bottom:2.5rem;line-height:1.7;font-weight:300}
-footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:2.5rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+.sec{max-width:1120px;margin:0 auto;padding:7rem 2rem}
+.sec-eyebrow{font-family:var(--mono);font-size:11px;color:var(--accent);
+  letter-spacing:.12em;text-transform:uppercase;margin-bottom:.75rem}
+.sec-heading{font-size:clamp(1.9rem,3.5vw,2.8rem);font-weight:800;
+  letter-spacing:-.025em;margin-bottom:1.1rem;line-height:1.15}
+.sec-body{font-size:1rem;color:var(--muted2);max-width:520px;
+  line-height:1.8;font-weight:300}
+
+/* ── About Section ── */
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:5rem;
+  align-items:start;margin-top:5rem}
+@media(max-width:768px){.about-grid{grid-template-columns:1fr;gap:3rem}}
+.about-text p{font-size:15px;color:var(--muted2);line-height:1.85;
+  font-weight:300;margin-bottom:1.25rem}
+.about-text p:last-child{margin-bottom:0}
+.about-text strong{color:var(--text);font-weight:600}
+.about-stack{display:flex;flex-direction:column;gap:10px}
+.stack-item{background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:14px 16px;
+  display:flex;align-items:center;gap:14px;transition:.15s}
+.stack-item:hover{border-color:var(--border2)}
+.stack-icon{font-size:18px;flex-shrink:0;width:32px;text-align:center}
+.stack-name{font-size:13px;font-weight:600;color:var(--text);
+  font-family:var(--mono)}
+.stack-desc{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* ── Features ── */
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);
+  gap:1px;background:var(--border);
+  border:1px solid var(--border);border-radius:14px;
+  overflow:hidden;margin-top:4rem}
+@media(max-width:900px){.features-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.features-grid{grid-template-columns:1fr}}
+.feat{background:var(--surface);padding:2rem;transition:background .2s}
+.feat:hover{background:var(--surface2)}
+.feat-icon{font-size:20px;margin-bottom:1rem;display:block;
+  width:40px;height:40px;display:flex;align-items:center;justify-content:center;
+  background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.12);
+  border-radius:8px}
+.feat-title{font-size:14px;font-weight:700;margin-bottom:.5rem;
+  letter-spacing:-.01em}
+.feat-text{font-size:13px;color:var(--muted2);line-height:1.65;font-weight:300}
+
+/* ── Services ── */
+.services-section{background:linear-gradient(180deg,transparent,rgba(14,165,233,.025),transparent)}
+.svc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+  gap:8px;margin-top:3.5rem}
+.svc-chip{background:var(--surface);border:1px solid var(--border);
+  border-radius:9px;padding:.9rem;text-align:center;transition:.15s;cursor:default}
+.svc-chip:hover{border-color:rgba(14,165,233,.3);background:rgba(14,165,233,.04)}
+.svc-chip-icon{font-size:22px;margin-bottom:.4rem;display:block}
+.svc-chip-name{font-size:12px;font-weight:600;display:block}
+.svc-chip-tag{font-size:10px;color:var(--muted);font-family:var(--mono);
+  margin-top:2px;display:block}
+
+/* ── How it works ── */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+  background:var(--border);border:1px solid var(--border);
+  border-radius:14px;overflow:hidden;margin-top:4rem}
+@media(max-width:768px){.steps{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.steps{grid-template-columns:1fr}}
+.step{background:var(--surface);padding:2rem 1.75rem}
+.step-num{font-family:var(--mono);font-size:11px;color:var(--accent);
+  letter-spacing:.1em;margin-bottom:1rem;display:block}
+.step-title{font-size:14px;font-weight:700;margin-bottom:.5rem}
+.step-text{font-size:12px;color:var(--muted2);line-height:1.65;font-weight:300}
+
+/* ── CTA ── */
+.cta-wrap{background:linear-gradient(135deg,rgba(14,165,233,.06),rgba(14,165,233,.02));
+  border-top:1px solid rgba(14,165,233,.08);
+  border-bottom:1px solid rgba(14,165,233,.08)}
+.cta-inner{max-width:680px;margin:0 auto;padding:7rem 2rem;text-align:center}
+.cta-title{font-size:clamp(2rem,4vw,3rem);font-weight:800;
+  letter-spacing:-.025em;margin-bottom:1rem;line-height:1.15}
+.cta-sub{font-size:1rem;color:var(--muted2);margin-bottom:2.75rem;
+  line-height:1.8;font-weight:300}
+
+/* ── Footer ── */
+footer{position:relative;z-index:1;
+  border-top:1px solid var(--border);padding:2.5rem 2.5rem;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:1rem}
 .footer-logo{font-family:var(--mono);font-size:14px;color:var(--muted)}
 .footer-logo span{color:var(--accent)}
-.footer-copy{font-size:12px;color:var(--muted)}
-.reveal{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
+.footer-meta{font-size:12px;color:var(--muted);font-family:var(--mono)}
+
+/* Scroll reveal */
+.reveal{opacity:0;transform:translateY(20px);
+  transition:opacity .55s ease,transform .55s ease}
 .reveal.visible{opacity:1;transform:none}
+
+/* Code block */
+.code-block{background:#050810;border:1px solid var(--border);
+  border-radius:10px;padding:1.5rem 1.75rem;font-family:var(--mono);
+  font-size:12px;line-height:1.9;overflow-x:auto;margin-top:4rem}
+.cb{color:#60a5fa}.cg{color:#4ade80}.cy{color:#fbbf24}.cm{color:#4a5568}
 </style>
 </head>
 <body>
 <div class="bg-grid"></div>
-<div class="bg-glow"></div>
+<div class="bg-glow-top"></div>
+<div class="bg-glow-bottom"></div>
+
+<!-- Nav -->
 <nav>
-  <a class="nav-logo" href="index.html">container<span>gen</span></a>
-  <div class="nav-links">
-    <a href="#features">Features</a>
-    <a href="#services">Services</a>
-    <a href="login.html" class="nav-cta">App öffnen →</a>
+  <a class="nav-logo" href="#">container<span>gen</span></a>
+  <div class="nav-right">
+    <a href="#about" class="nav-link">Über das Projekt</a>
+    <a href="#features" class="nav-link">Features</a>
+    <a href="#services" class="nav-link">Services</a>
+    <a href="app.html" class="nav-btn">App öffnen</a>
   </div>
 </nav>
+
+<!-- Hero -->
 <section class="hero">
   <div class="hero-inner">
-    <div class="hero-badge"><div class="dot"></div>KI-gestützte Docker-Konfiguration</div>
-    <h1>Docker Configs<br><em>in Sekunden</em> generieren</h1>
-    <p class="hero-sub">Kein manuelles Schreiben mehr. ContainerGen erstellt produktionsreife Dockerfiles, docker-compose und Kubernetes-Manifeste automatisch.</p>
-    <div class="hero-btns">
-      <a href="login.html" class="btn-primary">⚡ Kostenlos starten</a>
-      <a href="#features" class="btn-ghost">Mehr erfahren</a>
+    <div class="hero-label">
+      <div class="hero-label-dot"></div>
+      Lehrjahr-Projekt · Plattformentwicklung
     </div>
-    <div class="hero-stats">
-      <div class="stat"><div class="stat-num">11</div><div class="stat-label">Services</div></div>
-      <div class="stat"><div class="stat-num">&lt;30s</div><div class="stat-label">Pro Generierung</div></div>
-      <div class="stat"><div class="stat-num">100%</div><div class="stat-label">Sicher</div></div>
+    <h1>Docker Configs<br><span class="hl">automatisch generieren</span></h1>
+    <p class="hero-desc">
+      ContainerGen nimmt dir das manuelle Schreiben von Konfigurationsdateien ab.
+      Service auswählen, Parameter setzen, fertig — produktionsreife Dockerfiles,
+      Compose-Files und Kubernetes-Manifeste in unter 30 Sekunden.
+    </p>
+    <div class="hero-actions">
+      <a href="app.html" class="btn-cta">
+        &#x25B6; App starten
+      </a>
+      <a href="#about" class="btn-outline">Mehr erfahren</a>
+    </div>
+    <div class="hero-meta">
+      <div class="meta-item"><div class="meta-num">11</div><div class="meta-label">Services</div></div>
+      <div class="meta-item"><div class="meta-num">&lt;30s</div><div class="meta-label">Pro Generierung</div></div>
+      <div class="meta-item"><div class="meta-num">100%</div><div class="meta-label">Kostenlos</div></div>
+      <div class="meta-item"><div class="meta-num">9+</div><div class="meta-label">Dateitypen</div></div>
     </div>
   </div>
 </section>
+
+<!-- Features -->
 <section id="features">
   <div class="sec">
     <div class="reveal">
-      <div class="sec-tag">Features</div>
-      <div class="sec-title">Alles was du brauchst</div>
-      <p class="sec-sub">Von Dockerfile bis Kubernetes — alle Konfigurationsdateien in einem Klick.</p>
+      <div class="sec-eyebrow">Features</div>
+      <div class="sec-heading">Was ContainerGen generiert</div>
+      <p class="sec-body">
+        Nicht nur ein Dockerfile. Jeder Service liefert einen vollständigen Stack —
+        vom lokalen Dev-Setup bis zum Kubernetes-Produktions-Deployment.
+      </p>
     </div>
     <div class="features-grid reveal">
-      <div class="feat"><div class="feat-icon">🐳</div><div class="feat-title">Dockerfile</div><div class="feat-text">Optimierte Dockerfiles mit Multi-stage Build und korrekten Base-Images.</div></div>
-      <div class="feat"><div class="feat-icon">🔧</div><div class="feat-title">docker-compose</div><div class="feat-text">Vollständige Compose-Files mit Healthchecks, Volumes und Abhängigkeiten.</div></div>
-      <div class="feat"><div class="feat-icon">☸️</div><div class="feat-title">Kubernetes</div><div class="feat-text">Deployment, Service und HPA — produktionsreif mit SecurityContext.</div></div>
-      <div class="feat"><div class="feat-icon">🔒</div><div class="feat-title">Zero-Trust Security</div><div class="feat-text">Non-root User, Read-only FS, No new privileges — per Toggle konfigurierbar.</div></div>
-      <div class="feat"><div class="feat-icon">🚀</div><div class="feat-title">CI/CD Templates</div><div class="feat-text">GitHub Actions und GitLab CI Pipelines werden automatisch generiert.</div></div>
-      <div class="feat"><div class="feat-icon">✏️</div><div class="feat-title">Direkt bearbeitbar</div><div class="feat-text">Jede Datei kann direkt im Editor angepasst werden.</div></div>
+      <div class="feat">
+        <div class="feat-icon">&#x1F433;</div>
+        <div class="feat-title">Dockerfile</div>
+        <div class="feat-text">
+          Optimierter Build mit korrektem Base-Image, Layer-Caching und
+          Multi-stage Build wo sinnvoll — z.B. bei Go oder Java.
+        </div>
+      </div>
+      <div class="feat">
+        <div class="feat-icon">&#x2699;</div>
+        <div class="feat-title">docker-compose.yml</div>
+        <div class="feat-text">
+          Vollständiges Compose-File mit Healthchecks, named Volumes,
+          Depends-on Logik und konfigurierbaren Umgebungsvariablen via .env.
+        </div>
+      </div>
+      <div class="feat">
+        <div class="feat-icon">&#x2638;</div>
+        <div class="feat-title">Kubernetes Manifest</div>
+        <div class="feat-text">
+          Deployment, Service und HPA mit SecurityContext,
+          Resource Limits und konfigurierbarer Replica-Anzahl.
+        </div>
+      </div>
+      <div class="feat">
+        <div class="feat-icon">&#x1F6E1;</div>
+        <div class="feat-title">Zero-Trust Toggles</div>
+        <div class="feat-text">
+          Non-root User, Read-only Filesystem, No new privileges und
+          Cap-Drop ALL — einzeln ein- und ausschaltbar.
+        </div>
+      </div>
+      <div class="feat">
+        <div class="feat-icon">&#x1F680;</div>
+        <div class="feat-title">CI/CD Pipeline</div>
+        <div class="feat-text">
+          GitHub Actions und GitLab CI Templates werden automatisch
+          mitgeneriert — Build, Test und Deploy in einem Workflow.
+        </div>
+      </div>
+      <div class="feat">
+        <div class="feat-icon">&#x270F;</div>
+        <div class="feat-title">Direkt bearbeitbar</div>
+        <div class="feat-text">
+          Jede Datei ist direkt im integrierten Editor anpassbar.
+          Geänderte Tabs werden orange markiert, Reset ist jederzeit möglich.
+        </div>
+      </div>
+    </div>
+
+    <!-- Code preview -->
+    <div class="code-block reveal">
+      <span class="cm"># Beispiel — generiertes Dockerfile für Python Flask</span><br>
+      <span class="cb">FROM</span> python:3.12-slim<br><br>
+      <span class="cb">WORKDIR</span> /app<br>
+      <span class="cb">COPY</span> requirements.txt .<br>
+      <span class="cb">RUN</span> pip install --no-cache-dir -r requirements.txt<br>
+      <span class="cb">COPY</span> . .<br><br>
+      <span class="cm"># Zero-Trust: Non-root User</span><br>
+      <span class="cb">RUN</span> useradd -m -u 1000 appuser <span class="cy">&amp;&amp;</span> chown -R appuser:appuser /app<br>
+      <span class="cb">USER</span> appuser<br><br>
+      <span class="cm"># Read-only Filesystem — tmpfs für Laufzeitdaten</span><br>
+      <span class="cb">EXPOSE</span> <span class="cg">5000</span><br>
+      <span class="cb">CMD</span> [<span class="cg">"python"</span>, <span class="cg">"-m"</span>, <span class="cg">"flask"</span>, <span class="cg">"run"</span>, <span class="cg">"--host=0.0.0.0"</span>]
     </div>
   </div>
 </section>
-<section id="services">
+
+<!-- Services -->
+<section id="services" class="services-section">
   <div class="sec">
     <div class="reveal">
-      <div class="sec-tag">Services</div>
-      <div class="sec-title">11 Services, sofort bereit</div>
-      <p class="sec-sub">Von Python bis PostgreSQL — alle gängigen Frameworks und Datenbanken.</p>
+      <div class="sec-eyebrow">Unterstützte Services</div>
+      <div class="sec-heading">11 Services, sofort bereit</div>
+      <p class="sec-body">
+        Applikations-Frameworks, Webserver und Datenbanken — alle mit
+        den aktuellsten stabilen Image-Versionen von Docker Hub.
+      </p>
     </div>
     <div class="svc-grid reveal">
-      <div class="svc-chip"><div class="svc-chip-icon">🐍</div><div class="svc-chip-name">Python</div><div class="svc-chip-tag">Flask</div></div>
-      <div class="svc-chip"><div class="svc-chip-icon">🟢</div><div class="svc-chip-name">Node.js</div><div class="svc-chip-tag">Express</div></div>
-      <div class="svc-chip"><div class="svc-chip-icon">🐘</div><div class="svc-chip-name">PHP</div><div class="svc-chip-tag">+Nginx</div></div>
-      <div class="svc-chip"><div class="svc-chip-icon">🐹</div><div class="svc-chip-name">Go</div><div class="svc-chip-tag">Multi-stage</div></div>
-      <div class="svc-chip"><div class="svc-chip-icon">☕</div><div class="svc-chip-name">Java</div><div class="svc-chip-tag">Spring Boot</div></div>
-      <div class="svc-chip"><div class="svc-chip-icon">☁️</div><div class="svc-chip-name">Nextcloud</div><div class="svc-chip-tag">+MariaDB</div></div>
-      <div class="svc-chip"><div class="svc-chip-icon">⚡</div><div class="svc-chip-name">Nginx</div><div class="svc-chip-tag">Webserver</div></div>
-      <div class="svc-chip"><div class="svc-chip-icon">🪶</div><div class="svc-chip-name">Apache</div><div class="svc-chip-tag">Webserver</div></div>
-      <div class="svc-chip"><div class="svc-chip-icon">🐬</div><div class="svc-chip-name">MySQL</div><div class="svc-chip-tag">+Adminer</div></div>
-      <div class="svc-chip"><div class="svc-chip-icon">🦭</div><div class="svc-chip-name">MariaDB</div><div class="svc-chip-tag">+Adminer</div></div>
-      <div class="svc-chip"><div class="svc-chip-icon">🐘</div><div class="svc-chip-name">PostgreSQL</div><div class="svc-chip-tag">+pgAdmin</div></div>
+      <div class="svc-chip"><span class="svc-chip-icon">&#x1F40D;</span><span class="svc-chip-name">Python</span><span class="svc-chip-tag">Flask</span></div>
+      <div class="svc-chip"><span class="svc-chip-icon">&#x1F7E2;</span><span class="svc-chip-name">Node.js</span><span class="svc-chip-tag">Express</span></div>
+      <div class="svc-chip"><span class="svc-chip-icon">&#x1F418;</span><span class="svc-chip-name">PHP</span><span class="svc-chip-tag">+Nginx</span></div>
+      <div class="svc-chip"><span class="svc-chip-icon">&#x1F439;</span><span class="svc-chip-name">Go</span><span class="svc-chip-tag">Multi-stage</span></div>
+      <div class="svc-chip"><span class="svc-chip-icon">&#x2615;</span><span class="svc-chip-name">Java</span><span class="svc-chip-tag">Spring Boot</span></div>
+      <div class="svc-chip"><span class="svc-chip-icon">&#x2601;</span><span class="svc-chip-name">Nextcloud</span><span class="svc-chip-tag">+MariaDB</span></div>
+      <div class="svc-chip"><span class="svc-chip-icon">&#x26A1;</span><span class="svc-chip-name">Nginx</span><span class="svc-chip-tag">Webserver</span></div>
+      <div class="svc-chip"><span class="svc-chip-icon">&#x1FAB6;</span><span class="svc-chip-name">Apache</span><span class="svc-chip-tag">httpd</span></div>
+      <div class="svc-chip"><span class="svc-chip-icon">&#x1F42C;</span><span class="svc-chip-name">MySQL</span><span class="svc-chip-tag">+Adminer</span></div>
+      <div class="svc-chip"><span class="svc-chip-icon">&#x1F9ED;</span><span class="svc-chip-name">MariaDB</span><span class="svc-chip-tag">+Adminer</span></div>
+      <div class="svc-chip"><span class="svc-chip-icon">&#x1F418;</span><span class="svc-chip-name">PostgreSQL</span><span class="svc-chip-tag">+pgAdmin</span></div>
     </div>
   </div>
 </section>
-<section class="cta-section">
-  <div class="cta-inner reveal">
-    <div class="cta-title">Bereit zum Starten?</div>
-    <p class="cta-sub">Erstelle ein kostenloses Konto und generiere deine erste Docker-Konfiguration in weniger als 30 Sekunden.</p>
-    <a href="login.html" class="btn-primary">⚡ Jetzt kostenlos starten</a>
+
+<!-- How it works -->
+<section id="how">
+  <div class="sec">
+    <div class="reveal">
+      <div class="sec-eyebrow">Ablauf</div>
+      <div class="sec-heading">Wie es funktioniert</div>
+      <p class="sec-body">
+        Vier Schritte von der Auswahl bis zur fertigen Konfiguration —
+        kein lokales Setup, keine Installation.
+      </p>
+    </div>
+    <div class="steps reveal">
+      <div class="step">
+        <span class="step-num">01</span>
+        <div class="step-title">Service wählen</div>
+        <div class="step-text">
+          Aus 11 vorkonfigurierten Services auswählen — von Python Flask
+          bis PostgreSQL mit pgAdmin.
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-num">02</span>
+        <div class="step-title">Parameter setzen</div>
+        <div class="step-text">
+          Projektname, Port, Kubernetes-Ressourcen und Zero-Trust
+          Security-Flags nach Bedarf konfigurieren.
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-num">03</span>
+        <div class="step-title">Generieren</div>
+        <div class="step-text">
+          Die Anfrage geht an die Edge Function. Der API Key bleibt
+          serverseitig. Innerhalb von 30 Sekunden sind alle Dateien bereit.
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-num">04</span>
+        <div class="step-title">Anpassen & herunterladen</div>
+        <div class="step-text">
+          Dateien direkt im Editor bearbeiten oder einzeln bzw.
+          gesammt herunterladen und ins Projekt einbinden.
+        </div>
+      </div>
+    </div>
   </div>
 </section>
+
+<!-- CTA -->
+<section class="cta-wrap">
+  <div class="cta-inner reveal">
+    <div class="cta-title">Bereit loszulegen?</div>
+    <p class="cta-sub">
+      Konto erstellen und die erste Docker-Konfiguration
+      in unter einer Minute generieren.
+    </p>
+    <a href="app.html" class="btn-cta">&#x25B6; App starten</a>
+  </div>
+</section>
+
+<!-- Footer -->
 <footer>
   <div class="footer-logo">container<span>gen</span></div>
-  <div class="footer-copy">© 2025 ContainerGen</div>
+  <div class="footer-meta">Lehrjahr-Projekt · Plattformentwicklung · 2025</div>
 </footer>
+
 <script>
-const obs = new IntersectionObserver(e=>e.forEach(el=>{if(el.isIntersecting)el.target.classList.add('visible')}),{threshold:.1});
-document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
-document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener('click',e=>{e.preventDefault();document.querySelector(a.getAttribute('href'))?.scrollIntoView({behavior:'smooth'});});});
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.08 });
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const t = document.querySelector(a.getAttribute('href'));
+    if(t) t.scrollIntoView({ behavior: 'smooth' });
+  });
+});
 </script>
 </body>
 </html>
